@@ -1,2 +1,246 @@
-# wiki-gemini-rag-search
-The Wiki RAG Search System is a centralized solution that transforms Azure DevOps Wiki content into a fully searchable knowledge base using Google Gemini’s File Search Tool (FileSearchStore).
+# 🧠 Wiki RAG Search System
+
+Using **Google Gemini FileSearchStore + Slack Command Integration**
+
+This project syncs **Azure DevOps Wiki** content into a **[Google Gemini FileSearchStore](https://blog.google/technology/developers/file-search-gemini-api/)** and provides an **AI-powered search experience** directly inside **Slack** using a slash command.
+
+The system extracts wiki pages + images, uploads them to Gemini’s FileSearchStore for semantic search, and returns clean, formatted answers with no source leakage.
+
+Thia is a centralized solution that transforms Azure DevOps Wiki content into a fully searchable knowledge base using Google Gemini’s File Search Tool (FileSearchStore)
+
+# 🔍 What is Gemini’s File Search Tool?
+
+Gemini’s FileSearchStore is a specialized **Retrieval-Augmented Generation (RAG)** system that:
+
+* Stores files (text, PDFs, etc.)
+* Indexes content for semantic + keyword search
+* Allows the Gemini model to reference files during a query
+* Returns highly accurate, context-aware responses
+  
+# 🚀 Project Features
+
+🔍 **AI Wiki Search (RAG Enabled)**
+
+* Natural-language search over Azure DevOps wiki content
+* Uses Gemini’s FileSearchStore (RAG) for highly accurate answers
+* Returns structured markdown (headers, bullets, number lists)
+* Completely hides retrieved sources (clean output only)
+
+📄 **Wiki Data Sync**
+
+* Export all wiki pages to JSON
+* Extract and upload all wiki images
+* Link images → wiki page
+* Metadata for filtering (title, type, image GUID, source_page)
+
+🔁 **FileSearchStore Management**
+
+* Automatic deletion & recreation of the store
+* Idempotent uploads
+* Duplicate-image prevention using local hash store
+* Full pagination retrieval of all documents (20 per page)
+
+💬 **Slack Integration**
+
+* Responds to /wiki–style queries
+* Auto-chunks long answers (≥2800 chars) into multiple Slack messages
+* Sentence-aware splitting (no mid-sentence breaks)
+* Markdown formatting supported (bold, italics, bullets, numbered lists)
+
+🗂 **Logging**
+
+* Daily log rotation (logs/YYYY-MM-DD.log)
+* Max size: 30 MB per file
+* Console + file output (no compression)
+
+# 🏗 Architecture Overview
+<pre>
+Azure DevOps Wiki
+      │
+      ▼
+Wiki Sync
+  ├─ Export pages (JSON)
+  ├─ Extract images
+  ├─ Hash & Convert images
+  └─ Upload all to Gemini FileSearchStore
+      │
+      ▼
+Gemini RAG Search
+      │
+      ▼
+Slack Slash Command
+      │
+      ▼
+Formatted AI Answer (Markdown)
+</pre>
+📁 **Project Structure**
+<pre>
+  src/
+│
+├── utils
+    ├──logger.ts             # Log rotation system
+├── azureClient.ts           # Azure Client for WIKI
+├── geminiService.ts         # RAG store management + search
+├── models.ts                # Wiki models 
+├── wikiService.ts           # Extract wiki pages & images
+├── parseGeminiResponse.ts      # sanitize Gemini response
+├── slackController.ts       # Slack command handler
+├── server.ts                # exponse endpoints and start server
+├── wikiService.ts           # Download wiki documents
+│
+config/
+├── wiki-files/           # Exported wiki JSON files
+├── wiki-images/          # Extracted wiki images
+└── image-hash.json       # Prevents duplicate uploads
+│
+logs/
+└── *.log                 # Rotating logs
+</pre>
+
+# 📦 **Installation**
+
+1️⃣ **Install Dependencies**
+```
+npm install
+```
+
+2️⃣ **Environment Variables**
+
+Create .env:
+```
+PORT=PORT_NUMBER 
+AZ_ORG=YOUR_ORG
+AZ_PROJECT=YOUR_PROJECT
+AZ_PAT=YOUR_PAT -- There is instruction below how to get PAT
+AZ_CLIENT_URL=YOUR_AZURE_CLIENT_URL  -- Ex:https://dev.azure.com/YOUR_ORG/YOUR_PROJECT/_apis/wiki/wikis
+IMAGE_REPO_URL=YOUR_AZURE_IMAGE_REPO --Ex: https://dev.azure.com/YOUR_ORG/YOUR_PROJECT/_apis/git/repositories/{YOUR_WIKI}/items
+GEMINI_API_KEY=YOUR_GEMINI_API_KEY
+DATASET_NAME=YOUR_DATASET_NAME
+GEMINI_MODEL_IMAGE_GENERATION=gemini-2.0-flash-lite-preview
+GEMINI_MODEL_QA=gemini-2.5-flash
+WIKI_ID=YOUR_WIKI  -- There is instruction how to get your wiki below
+API_VERSION=7.1-preview.1
+```
+**_Note:_**
+- [How to get your wiki id/name](https://learn.microsoft.com/en-us/rest/api/azure/devops/wiki/pages/get-page?view=azure-devops-rest-7.1&tabs=HTTP)
+- [How to get PAT](https://learn.microsoft.com/en-us/rest/api/azure/devops/wiki/pages/get-page?view=azure-devops-rest-7.1&tabs=HTTP) - Need to add Read **Wiki** and **Code** Permissions to PAT
+
+3️⃣ **Start Development Server**
+```
+npm run dev
+```
+# 🔁 **Export the Wiki data**
+- Use any tool as **Postman** to trigger this endpoint
+```
+POST http://localhost:yourport/wikis/export
+```
+_Export behaviors:_
+* Export all text, images to wiki-files , wiki-images
+* Log all exported data
+
+# 🔁 **List out wiki documents**
+- Use any tool as **Postman** to trigger this endpoint
+```
+GET http://localhost:yourport/wikis/documents
+```
+<img width="726" height="480" alt="image" src="https://github.com/user-attachments/assets/536e443a-061d-4ef1-a08a-aede465f8ac0" />
+
+
+# 🔁 **Syncing the Wiki to Gemini RAG**
+- Use any tool as **Postman** to trigger this endpoint
+```
+POST http://localhost:yourport/gemini/sync
+```
+_Sync behaviors:_
+* Delete any existing FileSearchStore that is set in DATASET_NAME .env file
+* Create a new one
+* Upload all wiki text documents
+* Upload all images with metadata
+* Log upload counts (textCount + imageCount)
+  
+_Note: If you don't use Azure Wiki devOps then you can also use sync as instructions below:_
+
+_1. Create json files in folder config/wiki-files as structure_
+ ```
+  {
+  "title": "/Archive",
+  "source": "https://dev.azure.com/....",
+  "content": "Archive of pages with information....",
+  "images": [array of image names ]
+  }
+ ```
+_2. Create folder config/wiki-images and add images into this folder_
+    
+<img width="456" height="402" alt="image" src="https://github.com/user-attachments/assets/23e2f93b-020a-4187-8b7e-dab30e21bfcb" />
+
+# 🔍 **Searching the Wiki Using Gemini**
+
+There is an endpoint /gemini/query
+
+```
+// Query Gemini RAG knowledge base
+app.post("/gemini/query", async (req, res) => {
+    try {
+        const { query , customPrompt } = req.body; 
+        if (!query) {
+            return res.status(400).json({ error: "Query is required" });
+        }
+        console.log(req.body);
+        const result = await searchWiki(query,customPrompt);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error: (error as Error).message });
+    }
+});
+```
+
+_Search behavior:_
+* Uses Gemini model with fileSearch tool
+* Limits results to your RAG dataset only
+* Converts answer into Markdown
+* Returns clean text (no retrieval metadata)
+* Supports long-form chunking for Slack
+* customPrompt can let you create your own prompt to extend your need
+<img width="627" height="347" alt="image" src="https://github.com/user-attachments/assets/1900df5e-8f96-4fe1-9e6c-9f32a0356f66" />
+
+
+# 💬 Slack Slash Command
+1. [Setup Slack Command](https://docs.slack.dev/interactivity/implementing-slash-commands/)
+   
+   NOTE: Slack only accepts https for Slack Command. You can use tool as Cloudflare or deploy your endpoints with https server  
+
+3. Go to your Slack app and type command to verify
+   Sample Command
+   ```
+   /wiki search all pages relate to orders
+   ```
+
+<img width="408" height="107" alt="image" src="https://github.com/user-attachments/assets/e552fefe-2673-459e-a950-3818f1b40d15" />
+
+
+# 🛠 **Troubleshooting**
+
+❌ **"No answer found"**
+
+* Gemini could not find matching info in uploaded documents
+* Ensure wiki page exists
+* Ensure sync ran successfully
+* Check search phrasing (add more context)
+
+## 🚀 Built With
+
+* [Node.js](https://nodejs.org/) — Core runtime powering the backend  
+* [TypeScript](https://www.typescriptlang.org/) — Strongly typed JavaScript for safer development  
+* [Google Gemini File Search Store](https://ai.google.dev/gemini-api/docs/file-search#file-search-stores) — Vector search + multimodal grounding  
+* [Google Generative AI (Gemini)](https://gemini.google.com/app) — LLM for answering Wiki knowledge questions  
+* [Slack API](https://api.slack.com/) — Slash command integration for instant Q&A  
+* [Axios](https://github.com/axios/axios) — HTTP client for external calls  
+* [Node File System (fs)](https://nodejs.org/api/fs.html) — Handles export/import folder operations  
+* [UUID](https://www.npmjs.com/package/uuid) — Lightweight GUID generation for metadata 
+
+## Authors
+
+* **Long Tran**
+  
+🎉 **Enjoy exploring and improving this project — and feel free to share ideas, report issues, or contribute enhancements anytime!** 💡🚀
+  
