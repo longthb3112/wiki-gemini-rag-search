@@ -1,0 +1,53 @@
+# =========================
+# Node.js & TypeScript Base
+# =========================
+
+# Node modules
+node_modules/
+
+# Build output
+dist/
+build/
+out/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE / Editor files
+.vscode/
+.idea/
+*.sw?
+*.swo
+*.bak
+
+# Test coverage
+coverage/
+
+# Temporary files
+tmp/
+temp/
+
+# Optional npm cache directory
+.npm/
+
+# Lock files (optional – if you use a specific package manager, keep its lockfile)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
