@@ -6,7 +6,7 @@ This project syncs **Azure DevOps Wiki** content into a **[Google Gemini FileSea
 
 The system extracts wiki pages + images, uploads them to Gemini’s FileSearchStore for semantic search, and returns clean, formatted answers with no source leakage.
 
-Thia is a centralized solution that transforms Azure DevOps Wiki content into a fully searchable knowledge base using Google Gemini’s File Search Tool (FileSearchStore)
+This is a centralized solution that transforms Azure DevOps Wiki content into a fully searchable knowledge base using Google Gemini’s File Search Tool (FileSearchStore)
 
 # 🔍 What is Gemini’s File Search Tool?
 
@@ -214,7 +214,7 @@ _Search behavior:_
    ```
    /wiki search all pages relate to orders
    ```
-
+# FINAL RESULT (HOOORAY 🎉 🥳 🎇)
 <img width="408" height="107" alt="image" src="https://github.com/user-attachments/assets/e552fefe-2673-459e-a950-3818f1b40d15" />
 
 
