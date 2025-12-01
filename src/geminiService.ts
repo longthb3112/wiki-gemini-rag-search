@@ -435,23 +435,14 @@ export async function listRagDocuments() {
             'pageSize': 10,
         },
     });
-    const docs: any[] = [];
-    while (true) {
-        let page = docsPager.page;
-        if (!page || page.length === 0) {
-            break;
-        }
-        for await (const doc of docsPager) {
-            docs.push({
-                name: doc.name,
-                displayName: doc.displayName,
-                metadata: doc.customMetadata
-            });
-        }
-        if (!docsPager.hasNextPage()) {
-            break;
-        }
-        page = await docsPager.nextPage();
+        const docs = [];
+
+    for await (const doc of docsPager) {
+        docs.push({
+            name: doc.name,
+            displayName: doc.displayName,
+            metadata: doc.customMetadata,
+        });
     }
 
     console.log("📦 Total documents:", docs.length);
