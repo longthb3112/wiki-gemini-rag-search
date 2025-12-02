@@ -7,7 +7,7 @@ import {
     analyzeImageWithGemini
 } from "./geminiService";
 import { handleSlackQuestion } from "./slackController";
-import { verifySlackSignature } from "./middleware/verfifySlackSignature";
+import { verifySlackSignature } from "./middleware/verifySlackSignature";
 import {rateLimiter} from "./middleware/rateLimiter";
 
 import bodyParser from "body-parser";
