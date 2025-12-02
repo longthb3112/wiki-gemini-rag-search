@@ -132,19 +132,21 @@ Create .env:
 PORT=PORT_NUMBER 
 AZ_ORG=YOUR_ORG
 AZ_PROJECT=YOUR_PROJECT
-AZ_PAT=YOUR_PAT -- There is instruction below how to get PAT
+AZ_PAT=YOUR_PAT -- instruction below
 AZ_CLIENT_URL=YOUR_AZURE_CLIENT_URL  -- Ex:https://dev.azure.com/YOUR_ORG/YOUR_PROJECT/_apis/wiki/wikis
 IMAGE_REPO_URL=YOUR_AZURE_IMAGE_REPO --Ex: https://dev.azure.com/YOUR_ORG/YOUR_PROJECT/_apis/git/repositories/{YOUR_WIKI}/items
 GEMINI_API_KEY=YOUR_GEMINI_API_KEY
 DATASET_NAME=YOUR_DATASET_NAME
 GEMINI_MODEL_IMAGE_GENERATION=gemini-2.0-flash-lite-preview
 GEMINI_MODEL_QA=gemini-2.5-flash
-WIKI_ID=YOUR_WIKI  -- There is instruction how to get your wiki below
+WIKI_ID=YOUR_WIKI  -- instruction below
 API_VERSION=7.1-preview.1
+SLACK_SIGNING_SECRET=YOUR_SLACK_APP_SIGNATURE -- instruction below
 ```
 **_Note:_**
 - [How to get your wiki id/name](https://learn.microsoft.com/en-us/rest/api/azure/devops/wiki/pages/get-page?view=azure-devops-rest-7.1&tabs=HTTP)
 - [How to get PAT](https://learn.microsoft.com/en-us/rest/api/azure/devops/wiki/pages/get-page?view=azure-devops-rest-7.1&tabs=HTTP) - Need to add Read **Wiki** and **Code** Permissions to PAT
+- [How to get Slack Signing secret](https://docs.slack.dev/authentication/verifying-requests-from-slack/)
 
 3️⃣ **Start Development Server**
 ```
@@ -231,9 +233,9 @@ _Search behavior:_
    NOTE: Slack only accepts https for Slack Command. You can use tool as Cloudflare or deploy your endpoints with https server  
 
 3. Go to your Slack app and type command to verify
-   Sample Command
+   Sample Command 
    ```
-   /wiki How to submit PDMP report
+   /wiki find documents with title, content relates to "PDMP" and summarize the information how to submit PDMP manually 
    ```
 # FINAL RESULT (HOOORAY 🎉 🥳 🎇)
 <img width="801" height="207" alt="image" src="https://github.com/user-attachments/assets/4d24aa88-f040-47d4-8599-5b00bb720f7f" />
