@@ -97,6 +97,27 @@ logs/
 └── *.log                 # Rotating logs
 </pre>
 
+## 📦 Prerequisites
+Before running this project, ensure you have the following installed and configured:
+
+### 🔧 System Requirements
+- **Node.js 18+**  
+  The Gemini API and Slack SDK require modern Node versions for fetch, async/await, and TLS support  
+  👉 https://nodejs.org/
+
+- **npm or yarn**
+  Used to install dependencies  
+  (npm is included with Node)
+
+### 🔑 Required Accounts & API Keys
+- **Google Gemini API Key**  
+  Required for File Search + LLM generation  
+  👉 https://ai.google.dev/gemini-api
+
+- **Slack App with Slash Command**  
+  Needed to send answers to Slack channels  
+  👉 https://api.slack.com/
+  
 # 📦 **Installation**
 
 1️⃣ **Install Dependencies**
@@ -212,10 +233,11 @@ _Search behavior:_
 3. Go to your Slack app and type command to verify
    Sample Command
    ```
-   /wiki search all pages relate to orders
+   /wiki How to submit PDMP report
    ```
 # FINAL RESULT (HOOORAY 🎉 🥳 🎇)
-<img width="408" height="107" alt="image" src="https://github.com/user-attachments/assets/e552fefe-2673-459e-a950-3818f1b40d15" />
+<img width="801" height="207" alt="image" src="https://github.com/user-attachments/assets/4d24aa88-f040-47d4-8599-5b00bb720f7f" />
+
 
 
 # 🛠 **Troubleshooting**
@@ -227,7 +249,7 @@ _Search behavior:_
 * Ensure sync ran successfully
 * Check search phrasing (add more context)
 
-## 🚀 Built With
+# 🚀 Built With
 
 * [Node.js](https://nodejs.org/) — Core runtime powering the backend  
 * [TypeScript](https://www.typescriptlang.org/) — Strongly typed JavaScript for safer development  
@@ -238,9 +260,9 @@ _Search behavior:_
 * [Node File System (fs)](https://nodejs.org/api/fs.html) — Handles export/import folder operations  
 * [UUID](https://www.npmjs.com/package/uuid) — Lightweight GUID generation for metadata 
 
-## Authors
+# Authors
 
 * **Long Tran**
   
-🎉 **Enjoy exploring and improving this project — and feel free to share ideas, report issues, or contribute enhancements anytime!** 💡🚀
+# 🎉 **Enjoy exploring and improving this project — and feel free to share ideas, report issues, or contribute enhancements anytime!** 💡
   
