@@ -7,9 +7,42 @@ import {
     analyzeImageWithGemini
 } from "./geminiService";
 import { handleSlackQuestion } from "./slackController";
+import { verifySlackSignature } from "./middleware/verfifySlackSignature";
 import bodyParser from "body-parser";
+import qs from "querystring";
 
 const app = express();
+/************************************************************************************
+ * 🔐 SLACK ENDPOINT — MUST CAPTURE RAW BODY BEFORE ANY BODY PARSER
+ ************************************************************************************/
+app.post(
+  "/slack",
+
+  // 1️⃣ Capture raw body for signature
+  bodyParser.raw({ type: "*/*" }),
+
+  // 2️⃣ Convert raw body to string, verify signature
+  (req: any, res, next) => {
+    req.rawBody = req.body.toString("utf8");   // Save raw for signature
+    next();
+  },
+
+  verifySlackSignature,
+
+  // 3️⃣ MANUALLY PARSE Slack urlencoded payload
+  (req: any, res, next) => {
+    const bodyString = req.rawBody;
+    req.body = qs.parse(bodyString); // ← Converts into key/value object
+    next();
+  },
+
+  // 4️⃣ Handle Slack command
+  handleSlackQuestion
+);
+
+/************************************************************************************
+ * 🌐 NORMAL ROUTES — safe to use JSON body parser after Slack route
+ ************************************************************************************/
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -166,8 +199,6 @@ app.post("/gemini/analyze-image", async (req, res) => {
     }   
 });    
 
-// ------------------ SLACK INTERACTION ENDPOINT ------------------
-app.post("/slack/question", handleSlackQuestion);
 
 // Start the server
 const PORT = process.env.PORT || 4000;

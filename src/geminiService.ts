@@ -113,10 +113,10 @@ export async function analyzeImageWithGemini(imagePath: string): Promise<string>
     };
 
     const mimeType = mimeMap[ext] || "image/png";
-    
+
     try {
         const response = await ai.models.generateContent({
-            model:process.env.GEMINI_MODEL_IMAGE_GENERATION || "gemini-2.0-flash-lite-preview",
+            model: process.env.GEMINI_MODEL_IMAGE_GENERATION || "gemini-2.0-flash-lite-preview",
             contents: [{
                 role: "user",
                 parts: [
@@ -136,11 +136,11 @@ export async function analyzeImageWithGemini(imagePath: string): Promise<string>
                             "ocr": "..."
                             }
                             `
-                                                },
-                                                { inlineData: { mimeType, data: base64 } }
-                                            ]
-                                        }]
-                                    });
+                    },
+                    { inlineData: { mimeType, data: base64 } }
+                ]
+            }]
+        });
 
         const output = response.text || "";
 
@@ -284,29 +284,29 @@ export async function processImagesToRag(storeName: string) {
 }
 
 // ================= MASTER SYNC =================
-async function SetUpFileSearchStore(){
+async function SetUpFileSearchStore() {
     // ================= DELETE OLD STORE =================
 
-        const existingStore = await findRagStoreByDisplayName(DATASET_NAME);
+    const existingStore = await findRagStoreByDisplayName(DATASET_NAME);
 
-        if (existingStore?.name) {
-            console.log(`🗑 Deleting existing RAG store: ${DATASET_NAME}`);
-            await ai.fileSearchStores.delete({
-                name: existingStore.name,
-                config: { force: true }
-            });
-        }
-
-        // ================= CREATE NEW STORE =================
-
-        const newStore = await ai.fileSearchStores.create({
-            config: { displayName: DATASET_NAME }
+    if (existingStore?.name) {
+        console.log(`🗑 Deleting existing RAG store: ${DATASET_NAME}`);
+        await ai.fileSearchStores.delete({
+            name: existingStore.name,
+            config: { force: true }
         });
+    }
 
-        if (!newStore.name) {
-            throw new Error("Failed to create new RAG store");
-        }
-        console.log(`✅ New RAG store created: ${newStore.name}`);
+    // ================= CREATE NEW STORE =================
+
+    const newStore = await ai.fileSearchStores.create({
+        config: { displayName: DATASET_NAME }
+    });
+
+    if (!newStore.name) {
+        throw new Error("Failed to create new RAG store");
+    }
+    console.log(`✅ New RAG store created: ${newStore.name}`);
     return newStore.name;
 }
 export async function syncWikiToGeminiRag() {
@@ -380,18 +380,44 @@ export async function searchWiki(query: string, customPrompt: string = "") {
     const store = await findRagStoreByDisplayName(DATASET_NAME);
     if (!store?.name) throw new Error(`RAG store ${DATASET_NAME} not found`);
     const slackPrompt = `You are an expert IT knowledge assistant for internal wiki documentation.
-                Your job:
-                1. ALWAYS use fileSearch to retrieve documents from the wiki.
-                2. Answer ONLY using the content retrieved from the wiki. NEVER guess.
-                3. If the answer is not found in the wiki, reply: "I could not find information about this in the wiki."
-                4.Format your final answer cleanly for Slack using: 
-                - Clear section headers
-                - Bullet points for lists
-                - Numbered steps for processes
-                - Bold for emphasis
-                - No JSON output
-                - No backslashes before special characters
-                - Provide a concise, readable explanation. Return relevant Relevant Wiki Pages with title used at the end of anwser.
+
+Your workflow MUST follow these steps for every question:
+
+1. ALWAYS call fileSearch to retrieve relevant wiki documents.
+2. Before calling fileSearch:
+   - Expand the user query into a set of normalized, case-insensitive keywords.
+   - Generate synonyms, abbreviations, and morphological variations.
+   - Include keywords derived from:
+       • Titles and display names
+       • File names
+       • Custom metadata fields
+       • Common synonyms for technical terms (e.g., container → docker, pod, service, deploy, restart)
+3. When performing fileSearch:
+   - Search across ALL relevant fields:
+       • file content
+       • title
+       • displayName
+       • customMetadata
+   - Queries MUST be case-insensitive.
+   - If the first search returns no results, automatically retry with:
+       • Broader keyword sets
+       • Individual keywords
+       • Fuzzy/partial matches
+
+4. Use ONLY the content retrieved from fileSearch to answer.
+   Do NOT guess. If nothing relevant was found, reply:
+   "I could not find information about this in the wiki."
+
+5. Format your final answer cleanly for Slack:
+   - Clear section headers
+   - Bullet lists
+   - Numbered steps
+   - Bold for emphasis
+   - No JSON
+   - No escaping of special characters
+   - At the end, list "Relevant Wiki Pages" using their titles
+
+Your output must always follow Steps 1 → 2 → 3 → 4 -> 5.
 
                 QUESTION:
                 ${query}`
@@ -435,7 +461,7 @@ export async function listRagDocuments() {
             'pageSize': 10,
         },
     });
-        const docs = [];
+    const docs = [];
 
     for await (const doc of docsPager) {
         docs.push({

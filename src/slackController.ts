@@ -71,18 +71,17 @@ export async function handleSlackQuestion(req: any, res: any) {
     // Acknowledge Slack
     res.status(200).send("⏳ Processing your question...");
 
-    // 1. Query Gemini
+    // 1. Query Gemini  
     const raw = await searchWiki(req.body.text);
-
+   
     // 2. Parse / normalize
     const parsed = parseGeminiResponse(raw);
-
+  
     // 3. Send either normal or chunked
     await sendSlackAnswer(req.body.response_url, parsed.answer);
 
   } catch (error) {
     console.error("Slack error:", error);
-
     await axios.post(req.body.response_url, {
       response_type: "ephemeral",
       text: "❌ Bot failed to answer the question."
