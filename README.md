@@ -46,6 +46,8 @@ Gemini’s FileSearchStore is a specialized **Retrieval-Augmented Generation (RA
 * Auto-chunks long answers (≥2800 chars) into multiple Slack messages
 * Sentence-aware splitting (no mid-sentence breaks)
 * Markdown formatting supported (bold, italics, bullets, numbered lists)
+* Rate limiter with 10 requests per minute
+* Slack signing secret for Slack verification
 
 🗂 **Logging**
 
