@@ -79,6 +79,9 @@ Formatted AI Answer (Markdown)
 <pre>
   src/
 │
+├── middleware
+    ├──rateLimiter.ts                 # Slack rate limiter
+    ├──verifySlackSignature.ts        # Verify Slack Signature
 ├── utils
     ├──logger.ts             # Log rotation system
 ├── azureClient.ts           # Azure Client for WIKI
