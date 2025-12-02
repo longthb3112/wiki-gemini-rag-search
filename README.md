@@ -129,7 +129,7 @@ API_VERSION=7.1-preview.1
 ```
 npm run dev
 ```
-# 🔁 **Export the Wiki data**
+# ⬆️ **Export the Wiki data**
 - Use any tool as **Postman** to trigger this endpoint
 ```
 POST http://localhost:yourport/wikis/export
@@ -138,7 +138,7 @@ _Export behaviors:_
 * Export all text, images to wiki-files , wiki-images
 * Log all exported data
 
-# 🔁 **List out wiki documents**
+# 📚 **List out wiki documents**
 - Use any tool as **Postman** to trigger this endpoint
 ```
 GET http://localhost:yourport/wikis/documents
