@@ -8,6 +8,8 @@ import {
 } from "./geminiService";
 import { handleSlackQuestion } from "./slackController";
 import { verifySlackSignature } from "./middleware/verfifySlackSignature";
+import {rateLimiter} from "./middleware/rateLimiter";
+
 import bodyParser from "body-parser";
 import qs from "querystring";
 
@@ -35,7 +37,7 @@ app.post(
     req.body = qs.parse(bodyString); // ← Converts into key/value object
     next();
   },
-
+  rateLimiter,
   // 4️⃣ Handle Slack command
   handleSlackQuestion
 );
