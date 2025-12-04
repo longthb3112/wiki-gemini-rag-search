@@ -69,7 +69,7 @@ function splitIntoSlackChunks(text: string, maxSize = SLACK_MAX_MESSAGE_SIZE) {
 export async function handleSlackQuestion(req: any, res: any) {
   try {
     // Acknowledge Slack
-    res.status(200).send("⏳ Processing your question...");
+    res.status(200).send(`⏳ Processing your query: ${req.body.text}`);
 
     // 1. Query Gemini  
     const raw = await searchWiki(req.body.text);

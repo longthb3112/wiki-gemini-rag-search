@@ -9,9 +9,9 @@ import {
 import { handleSlackQuestion } from "./slackController";
 import { verifySlackSignature } from "./middleware/verifySlackSignature";
 import {rateLimiter} from "./middleware/rateLimiter";
-
 import bodyParser from "body-parser";
 import qs from "querystring";
+
 
 const app = express();
 /************************************************************************************
@@ -200,7 +200,6 @@ app.post("/gemini/analyze-image", async (req, res) => {
         res.status(500).json({ error: (error as Error).message });
     }   
 });    
-
 
 // Start the server
 const PORT = process.env.PORT || 4000;

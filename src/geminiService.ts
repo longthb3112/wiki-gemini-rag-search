@@ -3,13 +3,30 @@
 import fs from "fs";
 import path from "path";
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
+import {rewriteUserQuestionForFileSearch} from "./rewriteQueryForFileSearch";
 import crypto from "crypto";
+import { generateSynonyms } from "./optimizeExtractSynonyms";
+
 // ================= CONFIG =================
 
 const DATASET_NAME = process.env.DATASET_NAME || "IT_Wiki";
 const FILES_DIR = path.join(process.cwd(), "config", "wiki-files");
 const IMAGES_DIR = path.join(process.cwd(), "config", "wiki-images");
 const IMAGE_HASH_FILE = path.join(process.cwd(), "config", "image-hash-cache.json");
+const SYNONYMS_FILE = path.join(process.cwd(), "config","synonyms.json");
+interface SynonymConfig {
+  term: string;
+  synonyms: string[];
+}
+interface FileSearchPart {
+  fileSearchResults?: unknown;
+}
+
+// Load once at startup
+const synonymConfigs: SynonymConfig[] = fs.existsSync(SYNONYMS_FILE)
+  ? JSON.parse(fs.readFileSync(SYNONYMS_FILE, "utf8"))
+  : [];
+
 
 let ai: GoogleGenAI;
 let syncRunning = false; // prevents parallel execution
@@ -36,6 +53,65 @@ function clearImageHashCache() {
 }
 function generateGuid(): string {
     return crypto.randomUUID(); // Node 16+
+}
+function getSynonymsForContent(content: string): string[] {
+  const lower = content.toLowerCase();
+  const found = new Set<string>();
+
+  for (const entry of synonymConfigs) {
+    const termLower = entry.term.toLowerCase();
+
+    const termInText = lower.includes(termLower);
+    const synonymInText =
+      Array.isArray(entry.synonyms) &&
+      entry.synonyms.some(s => lower.includes(s.toLowerCase()));
+
+    // If doc mentions the term OR any of its synonyms → attach the whole cluster
+    if (termInText || synonymInText) {
+      found.add(termLower);
+      if (Array.isArray(entry.synonyms)) {
+        entry.synonyms.forEach(s => found.add(s.toLowerCase()));
+      }
+    }
+  }
+
+  return Array.from(found);
+}
+function chunkSynonyms(
+  synonyms: string[],
+  maxLen = 255
+): string[] {
+  const chunks: string[] = [];
+  let current = "";
+
+  for (const syn of synonyms) {
+    const trimmed = syn.trim();
+    if (!trimmed) continue;
+
+    const addition = (current ? ", " : "") + trimmed;
+
+    // If adding this synonym would exceed limit, start a new chunk
+    if (current.length + addition.length > maxLen) {
+      if (current) {
+        chunks.push(current);
+      }
+      // If a single synonym is longer than maxLen (rare), just push it alone
+      if (trimmed.length > maxLen) {
+        chunks.push(trimmed.slice(0, maxLen));
+        current = "";
+      } else {
+        current = trimmed;
+      }
+    } else {
+      current += addition;
+    }
+  }
+
+  if (current) {
+    chunks.push(current);
+  }
+
+  return chunks;
 }
 // ================= INIT =================
 
@@ -116,7 +192,7 @@ export async function analyzeImageWithGemini(imagePath: string): Promise<string>
 
     try {
         const response = await ai.models.generateContent({
-            model: process.env.GEMINI_MODEL_IMAGE_GENERATION || "gemini-2.0-flash-lite-preview",
+            model: process.env.GEMINI_MODEL_TEXT_IMAGE_GENERATION || "gemini-2.5-flash-lite",
             contents: [{
                 role: "user",
                 parts: [
@@ -178,7 +254,7 @@ async function uploadTextToRag(
     const buffer = Buffer.from(content, "utf8");
 
     const uniqueId = crypto.randomUUID();
-    const safeFilename = `${uniqueId}-${filename}`;
+    const safeFilename = `${filename}`;
 
     console.log(`⬆ Uploading to RAG:
                 File: ${safeFilename}
@@ -347,11 +423,26 @@ export async function syncWikiToGeminiRag() {
         for (const file of textFiles) {
             const json = JSON.parse(fs.readFileSync(path.join(FILES_DIR, file), "utf8"));
             const content = `TITLE: ${json.title} \nSOURCE: ${json.source} \n\n${json.content} `;
+            const synonyms = getSynonymsForContent(content);
 
-            await uploadTextToRag(storeName, content, file, [
+            const metadata: { key: string; stringValue: string }[] = [
                 { key: "type", stringValue: "wiki-text" },
-                { key: "title", stringValue: json.title || "" }
-            ]);
+                { key: "wiki_title", stringValue: json.title },
+                { key: "wiki_file", stringValue: file }
+            ];
+            
+           if (synonyms.length > 0) {
+                const synonymChunks = chunkSynonyms(synonyms);
+
+                synonymChunks.forEach((chunk, index) => {
+                    metadata.push({
+                    key: index === 0 ? "synonyms" : `synonyms_${index + 1}`,
+                    stringValue: chunk
+                    });
+                });
+            }
+
+            await uploadTextToRag(storeName, content, file, metadata);
             textFilesUploaded++;
         }
 
@@ -359,6 +450,9 @@ export async function syncWikiToGeminiRag() {
         const imagesProcessed = await processImagesToRag(storeName);
 
         console.log("✅ Sync complete. Images processed:", imagesProcessed);
+
+        await generateSynonyms(); // refresh synonyms after sync
+   
         return {
             message: "IT_Wiki RAG store updated",
             textFilesUploaded,
@@ -373,78 +467,82 @@ export async function syncWikiToGeminiRag() {
     }
 }
 // ================= SEARCH =================
+function extractText(response: any): string {
+  const parts =
+    response?.candidates?.[0]?.content?.parts ?? [];
+
+  return parts
+    .map((p: any) => p.text || "")
+    .join("\n");
+}
 
 export async function searchWiki(query: string, customPrompt: string = "") {
     initializeGemini();
+    
 
     const store = await findRagStoreByDisplayName(DATASET_NAME);
     if (!store?.name) throw new Error(`RAG store ${DATASET_NAME} not found`);
-    const slackPrompt = `You are an expert IT knowledge assistant for internal wiki documentation.
 
-Your workflow MUST follow these steps for every question:
+    const rewriteQuestion = await rewriteUserQuestionForFileSearch(query);
 
-1. ALWAYS call fileSearch to retrieve relevant wiki documents.
-2. Before calling fileSearch:
-   - Expand the user query into a set of normalized, case-insensitive keywords.
-   - Generate synonyms, abbreviations, and morphological variations.
-   - Include keywords derived from:
-       • Titles and display names
-       • File names
-       • Custom metadata fields
-       • Common synonyms for technical terms (e.g., container → docker, pod, service, deploy, restart)
-3. When performing fileSearch:
-   - Search across ALL relevant fields:
-       • file content
-       • title
-       • displayName
-       • customMetadata
-   - Queries MUST be case-insensitive.
-   - If the first search returns no results, automatically retry with:
-       • Broader keyword sets
-       • Individual keywords
-       • Fuzzy/partial matches
+  
+    const systemInstructionPrompt = customPrompt != "" ? customPrompt : `You are an expert IT knowledge assistant for internal wiki documentation queries. Your primary directive is to provide comprehensive, accurate, and well-structured answers strictly based on the company's wiki documentation provided by the File Search tool.
+        RULES AND WORKFLOW:
 
-4. Use ONLY the content retrieved from fileSearch to answer.
-   Do NOT guess. If nothing relevant was found, reply:
-   "I could not find information about this in the wiki."
+        1️⃣ Always call fileSearch BEFORE answering.
+        2️⃣ Answer ONLY using retrieved wiki content.
+        3️⃣ ALWAYS rewrite in your own words. Do NOT copy content or lists verbatim.
+        4️⃣ Keep the final answer under 300 words.
+        5️⃣ If nothing is found, reply: "I could not find information about this in the wiki."
 
-5. Format your final answer cleanly for Slack:
-   - Clear section headers
-   - Bullet lists
-   - Numbered steps
-   - Bold for emphasis
-   - No JSON
-   - No escaping of special characters
-   - At the end, list "Relevant Wiki Pages" using their titles
-
-Your output must always follow Steps 1 → 2 → 3 → 4 -> 5.
-
-                QUESTION:
-                ${query}`
-    const promptToUse = customPrompt != "" ? customPrompt + "\n\nQUESTION:\n" + query : slackPrompt;
-    const response: GenerateContentResponse = await ai.models.generateContent({
-        model: process.env.GEMINI_MODEL_QA || "gemini-2.5-flash",
-        contents: [
-            {
-                role: "user",
-                parts: [
-                    {
-                        text: promptToUse
-                    }
-                ]
-            }],
-        config: {
-            tools: [
+        FORMAT:
+        - Clear section headers
+        - Bullet lists
+        - Numbered steps
+        - **Bold** for emphasis
+        - No citations, no file names, no paths, no headings from wiki
+        At the very end of your response, list "Relevant Wiki Pages" using the exact titles of the cited documents.`
+    
+    let retryCounter = 1;
+    while(retryCounter >= 0) {
+        const response: GenerateContentResponse = await ai.models.generateContent({
+            model: process.env.GEMINI_MODEL_QA || "gemini-2.5-flash",
+            contents: [
                 {
-                    fileSearch: {
-                        fileSearchStoreNames: [store.name]
+                    role: "user",
+                    parts: [
+                        {
+                            text: rewriteQuestion
+                        }
+                    ]
+                }],
+            config: {
+               systemInstruction: {               
+                parts: [{ text: systemInstructionPrompt }]
+                },
+                tools: [
+                    {
+                        fileSearch: {
+                            fileSearchStoreNames: [store.name]
+                        }
                     }
-                }
-            ]
+                ],          
+            }
+        });
+        var answerText = extractText(response);
+        if (answerText && answerText.trim().length > 0) {
+            if(process.env.DEBUG_LOGS === "1"){
+                console.log("🧠 Gemini raw response:", JSON.stringify(response, null, 2));
+            }
+           
+            retryCounter = -1;
+            return { answer: answerText || "No answer found." };
         }
-    });
-
-    return { answer: response.text?.trim() || "No answer found." };
+     
+        setTimeout(() => {}, 1000); // brief pause before retry
+        retryCounter--;
+    }
+    return { answer: "No answer found." };
 }
 
 // ================= DOCUMENT LIST =================

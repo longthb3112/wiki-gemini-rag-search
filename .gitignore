@@ -2,6 +2,9 @@
 # Node.js & TypeScript Base
 # =========================
 
+#config
+config/
+
 # Node modules
 node_modules/
 
