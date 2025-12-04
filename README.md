@@ -1,30 +1,26 @@
 # 🧠 Wiki RAG Search System
 
-Using **Google Gemini FileSearchStore + Slack Command Integration**
+A robust **Retrieval-Augmented Generation (RAG)** search system that brings **intelligence** to internal documentation — especially **Azure DevOps Wiki**. It retrieves wiki content using **[Gemini’s FileSearchStore](https://blog.google/technology/developers/file-search-gemini-api/)** and applies **synonym-based query rewriting** to ensure accurate and complete results even when users use varied language.
 
-This project syncs **Azure DevOps Wiki** content into a **[Google Gemini FileSearchStore](https://blog.google/technology/developers/file-search-gemini-api/)** and provides an **AI-powered search experience** directly inside **Slack** using a slash command.
+ 💡 Built for **Slack-first enterprise knowledge search** 💡
 
-The system extracts wiki pages + images, uploads them to Gemini’s FileSearchStore for semantic search, and returns clean, formatted answers with no source leakage.
-
-This is a centralized solution that transforms Azure DevOps Wiki content into a fully searchable knowledge base using Google Gemini’s File Search Tool (FileSearchStore)
-
-# 🔍 What is Gemini’s File Search Tool?
-
-Gemini’s FileSearchStore is a specialized **Retrieval-Augmented Generation (RAG)** system that:
-
-* Stores files (text, PDFs, etc.)
-* Indexes content for semantic + keyword search
-* Allows the Gemini model to reference files during a query
-* Returns highly accurate, context-aware responses
-  
+# 🧠 System workflow
+```
+flowchart
+    A[Slack Command / API Request] --> B[Rewrite Query with Synonyms]
+    B --> C[Gemini FileSearch Tool]
+    C -->|Top-N Docs| D[Summarization with RAG]
+    D --> E[Answer with References]
+    E --> F[(Slack / API JSON Response)]
+```
 # 🚀 Project Features
 
 🔍 **AI Wiki Search (RAG Enabled)**
 
 * Natural-language search over Azure DevOps wiki content
+* synonym-based query rewriting to ensure accurate and complete results
 * Uses Gemini’s FileSearchStore (RAG) for highly accurate answers
 * Returns structured markdown (headers, bullets, number lists)
-* Completely hides retrieved sources (clean output only)
 
 📄 **Wiki Data Sync**
 
@@ -32,6 +28,7 @@ Gemini’s FileSearchStore is a specialized **Retrieval-Augmented Generation (RA
 * Extract and upload all wiki images
 * Link images → wiki page
 * Metadata for filtering (title, type, image GUID, source_page)
+* Build synonyms terms
 
 🔁 **FileSearchStore Management**
 
@@ -83,15 +80,16 @@ Formatted AI Answer (Markdown)
     ├──rateLimiter.ts                 # Slack rate limiter
     ├──verifySlackSignature.ts        # Verify Slack Signature
 ├── utils
-    ├──logger.ts             # Log rotation system
-├── azureClient.ts           # Azure Client for WIKI
-├── geminiService.ts         # RAG store management + search
-├── models.ts                # Wiki models 
-├── wikiService.ts           # Extract wiki pages & images
-├── parseGeminiResponse.ts      # sanitize Gemini response
-├── slackController.ts       # Slack command handler
-├── server.ts                # exponse endpoints and start server
-├── wikiService.ts           # Download wiki documents
+    ├──logger.ts                       # Log rotation system
+├── azureClient.ts                     # Azure Client for WIKI
+├── geminiService.ts                   # RAG store management + search
+├── models.ts                          # Wiki models 
+├── optimizeExtractSynonyms.ts         # Extract Synonyms
+├── parseGeminiResponse.ts             # sanitize Gemini response
+├── rewriteQueryForFileSearch.ts       # Rewrite end user query
+├── server.ts                          # exponse endpoints and start server
+├── slackController.ts                 # Slack command handler
+├── wikiService.ts                     # Download wiki documents
 │
 config/
 ├── wiki-files/           # Exported wiki JSON files
@@ -142,11 +140,12 @@ AZ_CLIENT_URL=YOUR_AZURE_CLIENT_URL  -- Ex:https://dev.azure.com/YOUR_ORG/YOUR_P
 IMAGE_REPO_URL=YOUR_AZURE_IMAGE_REPO --Ex: https://dev.azure.com/YOUR_ORG/YOUR_PROJECT/_apis/git/repositories/{YOUR_WIKI}/items
 GEMINI_API_KEY=YOUR_GEMINI_API_KEY
 DATASET_NAME=YOUR_DATASET_NAME
-GEMINI_MODEL_IMAGE_GENERATION=gemini-2.0-flash-lite-preview
+GEMINI_MODEL_TEXT_IMAGE_GENERATION=gemini-2.5-flash-lite
 GEMINI_MODEL_QA=gemini-2.5-flash
 WIKI_ID=YOUR_WIKI  -- instruction below
 API_VERSION=7.1-preview.1
 SLACK_SIGNING_SECRET=YOUR_SLACK_APP_SIGNATURE -- instruction below
+DEBUG_LOGS=1 -- flexible to turn on/off to debug log
 ```
 **_Note:_**
 - [How to get your wiki id/name](https://learn.microsoft.com/en-us/rest/api/azure/devops/wiki/pages/get-page?view=azure-devops-rest-7.1&tabs=HTTP)
