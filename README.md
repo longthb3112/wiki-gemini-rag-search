@@ -255,6 +255,9 @@ _Search behavior:_
 * Ensure sync ran successfully
 * Check search phrasing (add more context)
 
+❌ **429 Too Many Requests**
+* Check limit of your current model or request to increase request quota of your model
+
 # 🚀 Built With
 
 * [Node.js](https://nodejs.org/) — Core runtime powering the backend  
