@@ -202,7 +202,7 @@ export async function analyzeImageWithGemini(imagePath: string): Promise<string>
 
                             Extract **two things** from this image:
 
-                            1. A short summary (2–3 sentences) describing what the image shows.
+                            1. A short summary (2–3 sentences) describing what the image shows. Remove all patient information.
                             2. All readable text from the image (OCR).
 
                             Return STRICT JSON ONLY:
@@ -418,6 +418,8 @@ export async function syncWikiToGeminiRag() {
         // ================= SETUP STORE =================
         const storeName = await SetUpFileSearchStore();
 
+        await generateSynonyms(); // refresh synonyms before upload
+
         // ================= UPLOAD TEXT FILES =================
         let textFilesUploaded = 0;
         for (const file of textFiles) {
@@ -447,16 +449,16 @@ export async function syncWikiToGeminiRag() {
         }
 
         // ================= UPLOAD IMAGE FILES =================
-        const imagesProcessed = await processImagesToRag(storeName);
-
+    
+        const imagesProcessed = await processImagesToRag(storeName);       
         console.log("✅ Sync complete. Images processed:", imagesProcessed);
 
-        await generateSynonyms(); // refresh synonyms after sync
+       
    
         return {
             message: "IT_Wiki RAG store updated",
             textFilesUploaded,
-            imageFilesUploaded: imagesProcessed.uploadedImages,
+            imageFilesUploaded: imagesProcessed.uploadedImages, 
             store: storeName
         };
 
@@ -492,7 +494,7 @@ export async function searchWiki(query: string, customPrompt: string = "") {
         1️⃣ Always call fileSearch BEFORE answering.
         2️⃣ Answer ONLY using retrieved wiki content.
         3️⃣ ALWAYS rewrite in your own words. Do NOT copy content or lists verbatim.
-        4️⃣ Keep the final answer under 300 words.
+        4️⃣ Keep the final answer under 250 words.
         5️⃣ If nothing is found, reply: "I could not find information about this in the wiki."
 
         FORMAT:
