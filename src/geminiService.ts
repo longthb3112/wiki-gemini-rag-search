@@ -433,9 +433,9 @@ export async function syncWikiToGeminiRag() {
                 { key: "wiki_file", stringValue: file }
             ];
             
+           const MAX_SYNONYM_GROUPS = 15; // metadata limit safety
            if (synonyms.length > 0) {
-                const synonymChunks = chunkSynonyms(synonyms);
-
+                const synonymChunks = chunkSynonyms(synonyms).slice(0, MAX_SYNONYM_GROUPS); // enforce max allowed
                 synonymChunks.forEach((chunk, index) => {
                     metadata.push({
                     key: index === 0 ? "synonyms" : `synonyms_${index + 1}`,
@@ -450,8 +450,8 @@ export async function syncWikiToGeminiRag() {
 
         // ================= UPLOAD IMAGE FILES =================
     
-        const imagesProcessed = await processImagesToRag(storeName);       
-        console.log("✅ Sync complete. Images processed:", imagesProcessed);
+            const imagesProcessed = await processImagesToRag(storeName);       
+            console.log("✅ Sync complete. Images processed:", imagesProcessed);
 
        
    
