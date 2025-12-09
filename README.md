@@ -18,7 +18,7 @@ flowchart
 🔍 **AI Wiki Search (RAG Enabled)**
 
 * Natural-language search over Azure DevOps wiki content
-* synonym-based query rewriting to ensure accurate and complete results
+* Synonym-based query rewriting to ensure accurate and complete results
 * Uses Gemini’s FileSearchStore (RAG) for highly accurate answers
 * Returns structured markdown (headers, bullets, number lists)
 
