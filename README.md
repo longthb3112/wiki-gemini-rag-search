@@ -234,7 +234,15 @@ _Search behavior:_
 # 💬 Slack Slash Command
 1. [Setup Slack Command](https://docs.slack.dev/interactivity/implementing-slash-commands/)
    
-   NOTE: Slack only accepts https for Slack Command. You can use tool as Cloudflare or deploy your endpoints with https server  
+   NOTE: Slack only accepts https for Slack Command.
+   I created another [wiki-gemini-search-only-repository](https://github.com/longthb3112/wiki-gemini-search-only) that only exposes search apis so you can host search apis easily to integrate with Slack easier. 
+
+   Test purpose:
+   - Use tool as Cloudflare to expose https url and add to your slack command.
+   - Deploy code to Render (a provider with a host free plan for personal project) and provide free SSL certificate
+   
+   Production purpose:
+   - Deploy to your server to get a ssl certificate url and add to your command 
 
 3. Go to your Slack app and type command to verify
    Sample Command 
