@@ -256,7 +256,19 @@ _Search behavior:_
 # FINAL RESULT (HOOORAY 🎉 🥳 🎇)
 <img width="801" height="207" alt="image" src="https://github.com/user-attachments/assets/4d24aa88-f040-47d4-8599-5b00bb720f7f" />
 
+# 🔐 Security & Exposure Notice (Important)
+**⚠️ API Exposure Guidelines**
 
+For **security and cost control**, it is **strongly recommended** to expose **only the search-related APIs** (e.g., Wiki Search / RAG endpoints) to the public internet.
+
+All other APIs—such as:
+
+- Indexing
+- File ingestion
+- Metadata updates
+- Synonym generation
+- Administrative or maintenance operations
+should be **kept local, restricted to internal networks,** or protected with **strong authentication and authorization mechanisms.**
 
 # 🛠 **Troubleshooting**
 
